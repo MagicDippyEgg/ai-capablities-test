@@ -1,0 +1,41 @@
+name: Build NES Emulator
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential cmake libsdl2-dev pkg-config
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Run Tests
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Package Linux Artifacts
+      run: |
+        mkdir -p dist
+        cp build/nes_emulator dist/nes_emulator
+        cp README.md dist/
+
+    - name: Upload Linux Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nes-emulator-linux-x86_64
+        path: dist/
