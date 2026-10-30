@@ -2,9 +2,9 @@ name: Build NES Emulator
 
 on:
   push:
-    branches: [ main ]
+    branches: [ stuff ]
   pull_request:
-    branches: [ main ]
+    branches: [ stuff ]
 
 jobs:
   build-linux:
