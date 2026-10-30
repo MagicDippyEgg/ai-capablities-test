@@ -41,11 +41,19 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    std::cout << "=======================================" << std::endl;
+    std::cout << " NES Emulator - Loading ROM..." << std::endl;
+    std::cout << " ROM Path: " << romPath << std::endl;
+    std::cout << " Window Scale: " << SCALE << "x (" << (NES_WIDTH * SCALE) << "x" << (NES_HEIGHT * SCALE) << ")" << std::endl;
+    std::cout << "=======================================" << std::endl;
+
     NES nes;
     if (!nes.loadCartridge(romPath)) {
-        std::cerr << "Failed to load ROM: " << romPath << std::endl;
+        std::cerr << "Error: Failed to load ROM file: " << romPath << std::endl;
         return 1;
     }
+
+    std::cout << "ROM successfully loaded! Initializing SDL2 video & audio..." << std::endl;
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
@@ -88,7 +96,15 @@ int main(int argc, char* argv[]) {
     SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(NULL, 0, &desiredSpec, nullptr, 0);
     if (audioDevice > 0) {
         SDL_PauseAudioDevice(audioDevice, 0);
+        std::cout << "Audio initialized (44.1 kHz, 32-bit float)." << std::endl;
+    } else {
+        std::cout << "Warning: Audio device initialization skipped/failed: " << SDL_GetError() << std::endl;
     }
+
+    std::cout << "\nEmulator running. Controls:" << std::endl;
+    std::cout << "  D-Pad: Arrow Keys | A: Z | B: X | Select: Shift | Start: Enter" << std::endl;
+    std::cout << "  Pause/Resume: P | Reset: R | Window Scale: 1, 2, 3, 4" << std::endl;
+    std::cout << "Press ESC or close the window to exit.\n" << std::endl;
 
     bool running = true;
     bool paused = false;
@@ -101,6 +117,7 @@ int main(int argc, char* argv[]) {
     const uint32_t cpuClocksPerAudioSample = 40; // ~1.78MHz / 44100 Hz
 
     auto lastFrameTime = std::chrono::high_resolution_clock::now();
+    uint32_t totalFrames = 0;
 
     while (running) {
         while (SDL_PollEvent(&event)) {
@@ -108,6 +125,7 @@ int main(int argc, char* argv[]) {
                 running = false;
             } else if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE: running = false; break;
                 case SDLK_z: nes.getController(0).setButton(Controller::A, true); break;
                 case SDLK_x: nes.getController(0).setButton(Controller::B, true); break;
                 case SDLK_RSHIFT:
@@ -117,8 +135,14 @@ int main(int argc, char* argv[]) {
                 case SDLK_DOWN: nes.getController(0).setButton(Controller::DOWN, true); break;
                 case SDLK_LEFT: nes.getController(0).setButton(Controller::LEFT, true); break;
                 case SDLK_RIGHT: nes.getController(0).setButton(Controller::RIGHT, true); break;
-                case SDLK_p: paused = !paused; break;
-                case SDLK_r: nes.reset(); break;
+                case SDLK_p:
+                    paused = !paused;
+                    std::cout << (paused ? "Emulator paused." : "Emulator resumed.") << std::endl;
+                    break;
+                case SDLK_r:
+                    nes.reset();
+                    std::cout << "Emulator reset." << std::endl;
+                    break;
                 case SDLK_1: SDL_SetWindowSize(window, NES_WIDTH * 1, NES_HEIGHT * 1); break;
                 case SDLK_2: SDL_SetWindowSize(window, NES_WIDTH * 2, NES_HEIGHT * 2); break;
                 case SDLK_3: SDL_SetWindowSize(window, NES_WIDTH * 3, NES_HEIGHT * 3); break;
@@ -151,6 +175,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             nes.getPPU().frameComplete = false;
+            totalFrames++;
 
             // Queue audio
             if (audioDevice > 0 && !audioBuffer.empty()) {
@@ -180,6 +205,8 @@ int main(int argc, char* argv[]) {
         }
         lastFrameTime = std::chrono::high_resolution_clock::now();
     }
+
+    std::cout << "Exiting NES Emulator (Total frames rendered: " << totalFrames << ")." << std::endl;
 
     if (audioDevice > 0) {
         SDL_CloseAudioDevice(audioDevice);
