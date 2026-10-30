@@ -46,7 +46,7 @@ uint8_t Bus::cpuRead(uint16_t addr, bool readOnly) {
     } else if (addr >= 0x2000 && addr <= 0x3FFF) {
         // PPU Registers (mirrored every 8 bytes)
         if (m_ppu) {
-            data = m_ppu->cpuRead(addr & 0x2007, readOnly);
+            data = m_ppu->cpuRead(addr & 0x0007, readOnly);
         }
     } else if (addr == 0x4016) {
         if (m_controller1) {
@@ -72,7 +72,7 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data) {
         ram[addr & 0x07FF] = data;
     } else if (addr >= 0x2000 && addr <= 0x3FFF) {
         if (m_ppu) {
-            m_ppu->cpuWrite(addr & 0x2007, data);
+            m_ppu->cpuWrite(addr & 0x0007, data);
         }
     } else if (addr == 0x4014) {
         // OAM DMA Transfer
