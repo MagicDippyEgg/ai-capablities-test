@@ -22,6 +22,10 @@ public:
 
     MirrorMode getMirrorMode() const;
 
+    bool irqActive() const;
+    void irqClear();
+    void scanline();
+
 private:
     bool m_loaded = false;
     uint8_t m_prgBanks = 0;
@@ -29,6 +33,7 @@ private:
 
     std::vector<uint8_t> m_prgMemory;
     std::vector<uint8_t> m_chrMemory;
+    std::vector<uint8_t> m_prgRam;
 
     std::shared_ptr<Mapper> m_mapper;
     MirrorMode m_mirrorMode = MirrorMode::HORIZONTAL;

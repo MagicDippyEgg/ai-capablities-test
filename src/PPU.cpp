@@ -30,6 +30,7 @@ void PPU::connectCartridge(std::shared_ptr<Cartridge> cartridge) {
 
 uint8_t PPU::cpuRead(uint16_t addr, bool readOnly) {
     uint8_t data = 0x00;
+    addr &= 0x0007;
 
     if (readOnly) {
         switch (addr) {
@@ -78,6 +79,8 @@ uint8_t PPU::cpuRead(uint16_t addr, bool readOnly) {
 }
 
 void PPU::cpuWrite(uint16_t addr, uint8_t data) {
+    addr &= 0x0007;
+
     switch (addr) {
     case 0x0000: // Control
         m_control.reg = data;
@@ -146,6 +149,10 @@ uint8_t PPU::ppuRead(uint16_t addr) {
             else if (addr <= 0x07FF) data = m_nameTable[0][addr & 0x03FF];
             else if (addr <= 0x0BFF) data = m_nameTable[1][addr & 0x03FF];
             else data = m_nameTable[1][addr & 0x03FF];
+        } else if (mirror == MirrorMode::SINGLE_SCREEN_LOWER) {
+            data = m_nameTable[0][addr & 0x03FF];
+        } else if (mirror == MirrorMode::SINGLE_SCREEN_UPPER) {
+            data = m_nameTable[1][addr & 0x03FF];
         }
     } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
         addr &= 0x001F;
@@ -180,6 +187,10 @@ void PPU::ppuWrite(uint16_t addr, uint8_t data) {
             else if (addr <= 0x07FF) m_nameTable[0][addr & 0x03FF] = data;
             else if (addr <= 0x0BFF) m_nameTable[1][addr & 0x03FF] = data;
             else m_nameTable[1][addr & 0x03FF] = data;
+        } else if (mirror == MirrorMode::SINGLE_SCREEN_LOWER) {
+            m_nameTable[0][addr & 0x03FF] = data;
+        } else if (mirror == MirrorMode::SINGLE_SCREEN_UPPER) {
+            m_nameTable[1][addr & 0x03FF] = data;
         }
     } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
         addr &= 0x001F;
@@ -336,6 +347,14 @@ void PPU::clock() {
         if (m_cycle == 257) {
             loadBackgroundShifters();
             transferAddressX();
+        }
+
+        if (m_cycle == 260 && m_scanline >= 0 && m_scanline < 240) {
+            if (m_mask.render_background || m_mask.render_sprites) {
+                if (m_cartridge) {
+                    m_cartridge->scanline();
+                }
+            }
         }
 
         if (m_scanline == -1 && m_cycle >= 280 && m_cycle < 305) {

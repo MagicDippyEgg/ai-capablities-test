@@ -13,6 +13,10 @@ add_library(nes_core
     src/Cartridge.cpp
     src/Mapper.cpp
     src/Mapper0.cpp
+    src/Mapper1.cpp
+    src/Mapper2.cpp
+    src/Mapper3.cpp
+    src/Mapper4.cpp
     src/CPU.cpp
     src/PPU.cpp
     src/APU.cpp
