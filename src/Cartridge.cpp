@@ -1,5 +1,9 @@
 #include "Cartridge.hpp"
 #include "Mapper0.hpp"
+#include "Mapper1.hpp"
+#include "Mapper2.hpp"
+#include "Mapper3.hpp"
+#include "Mapper4.hpp"
 #include <fstream>
 #include <iostream>
 #include <cstring>
@@ -62,10 +66,25 @@ Cartridge::Cartridge(const std::string& filename) {
         ifs.read(reinterpret_cast<char*>(m_chrMemory.data()), m_chrMemory.size());
     }
 
-    // Instanciate mapper
+    // PRG RAM: 32KB
+    m_prgRam.resize(32768, 0);
+
+    // Instantiate mapper
     switch (mapperID) {
     case 0:
         m_mapper = std::make_shared<Mapper0>(m_prgBanks, m_chrBanks);
+        break;
+    case 1:
+        m_mapper = std::make_shared<Mapper1>(m_prgBanks, m_chrBanks);
+        break;
+    case 2:
+        m_mapper = std::make_shared<Mapper2>(m_prgBanks, m_chrBanks);
+        break;
+    case 3:
+        m_mapper = std::make_shared<Mapper3>(m_prgBanks, m_chrBanks);
+        break;
+    case 4:
+        m_mapper = std::make_shared<Mapper4>(m_prgBanks, m_chrBanks);
         break;
     default:
         std::cerr << "Unsupported mapper ID: " << static_cast<int>(mapperID) << std::endl;
@@ -76,6 +95,10 @@ Cartridge::Cartridge(const std::string& filename) {
 }
 
 bool Cartridge::cpuRead(uint16_t addr, uint8_t &data) {
+    if (addr >= 0x6000 && addr <= 0x7FFF) {
+        data = m_prgRam[addr - 0x6000];
+        return true;
+    }
     uint32_t mapped_addr = 0;
     if (m_mapper && m_mapper->cpuMapRead(addr, mapped_addr)) {
         if (mapped_addr < m_prgMemory.size()) {
@@ -87,6 +110,10 @@ bool Cartridge::cpuRead(uint16_t addr, uint8_t &data) {
 }
 
 bool Cartridge::cpuWrite(uint16_t addr, uint8_t data) {
+    if (addr >= 0x6000 && addr <= 0x7FFF) {
+        m_prgRam[addr - 0x6000] = data;
+        return true;
+    }
     uint32_t mapped_addr = 0;
     if (m_mapper && m_mapper->cpuMapWrite(addr, mapped_addr, data)) {
         if (mapped_addr < m_prgMemory.size()) {
@@ -121,10 +148,19 @@ bool Cartridge::ppuWrite(uint16_t addr, uint8_t data) {
 
 MirrorMode Cartridge::getMirrorMode() const {
     if (m_mapper) {
-        MirrorMode mode = m_mapper->mirrorMode();
-        if (mode != MirrorMode::HORIZONTAL) {
-            return mode;
-        }
+        return m_mapper->mirrorMode();
     }
     return m_mirrorMode;
+}
+
+bool Cartridge::irqActive() const {
+    return m_mapper ? m_mapper->irqActive() : false;
+}
+
+void Cartridge::irqClear() {
+    if (m_mapper) m_mapper->irqClear();
+}
+
+void Cartridge::scanline() {
+    if (m_mapper) m_mapper->scanline();
 }
