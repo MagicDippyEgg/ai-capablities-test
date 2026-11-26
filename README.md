@@ -11,7 +11,13 @@ The primary target for initial compatibility is **Super Mario Bros. (NTSC, Mappe
 - **CPU Core (Ricoh 2A03 / 6502)**: Complete implementation of all official 6502 opcodes, 13 addressing modes, status flags, stack operations, interrupts (RESET, NMI, IRQ), and cycle timing.
 - **Picture Processing Unit (PPU 2C02)**: Complete background rendering, 8x8 & 8x16 sprite rendering, sprite 0 hit detection, sprite evaluation, Loopy scrolling, palette table mapping, VBlank & NMI timing. Native 256x240 resolution rendered via integer scaling.
 - **Audio Processing Unit (APU)**: Pulse 1, Pulse 2, Triangle, and Noise channel synthesis with non-linear audio output mixing.
-- **Cartridge & Mapper Architecture**: iNES and NES 2.0 header parsing, Mapper 0 (NROM) support, PRG ROM, CHR ROM, CHR RAM, and horizontal/vertical mirroring handling.
+- **Cartridge & Mapper Architecture**:
+  - iNES and NES 2.0 header parsing.
+  - **Mapper 0 (NROM)**: 16KB/32KB PRG ROM, 8KB CHR ROM/RAM.
+  - **Mapper 1 (MMC1)**: 5-bit serial shift register, 16KB/32KB PRG bank switching, 4KB/8KB CHR bank switching, dynamic mirroring, PRG RAM support ($6000-$7FFF).
+  - **Mapper 2 (UxROM)**: Switchable 16KB PRG ROM bank at $8000, fixed last 16KB bank at $C000.
+  - **Mapper 3 (CNROM)**: Fixed PRG ROM, switchable 8KB CHR bank.
+  - **Mapper 4 (MMC3)**: 8KB PRG banking, 1KB/2KB CHR banking, PRG/CHR inversion modes, dynamic mirroring, scanline IRQ counter.
 - **Input / Controls**: NES standard controller emulation ($4016/$4017 strobe & shift register logic) with keyboard mapping.
 - **Emulator GUI**: SDL2 front-end with integer scaling options (1x, 2x, 3x, 4x), pause/resume (`P`), reset (`R`), window resizing, and frame limiter (60 FPS target).
 
@@ -62,10 +68,10 @@ ctest --test-dir build --output-on-failure
 
 The test suite validates:
 - CPU addressing modes, opcodes, stack, and branch behavior (`test_cpu`).
-- iNES cartridge parsing, Mapper 0, and bus mapping (`test_cartridge`).
+- iNES cartridge parsing, Mapper 0, Mapper 1 (MMC1), Mapper 2 (UxROM), Mapper 3 (CNROM), Mapper 4 (MMC3), and PRG RAM mapping (`test_cartridge`).
 - PPU register reads/writes, Loopy scroll, and VBlank/NMI triggers (`test_ppu`).
 - Controller strobe and shift register mechanics (`test_controller`).
-- Integration test running 120 frames of Super Mario Bros. (`test_integration`).
+- Integration test executing 120 full frames of emulation (`test_integration`).
 
 ---
 
@@ -127,11 +133,15 @@ An automated GitHub Actions workflow is provided in `.github/workflows/build.yml
 ├── include/
 │   ├── APU.hpp          # Audio processing unit (Pulse 1, 2, Triangle, Noise)
 │   ├── Bus.hpp          # System interconnect & memory mapping
-│   ├── Cartridge.hpp    # iNES file parser & memory storage
+│   ├── Cartridge.hpp    # iNES file parser, PRG RAM & memory storage
 │   ├── Controller.hpp   # Controller strobe and shift register logic
 │   ├── CPU.hpp          # Ricoh 2A03 6502 CPU implementation
 │   ├── Mapper.hpp       # Mapper abstract base class
 │   ├── Mapper0.hpp      # NROM (Mapper 0) implementation
+│   ├── Mapper1.hpp      # MMC1 (Mapper 1) implementation
+│   ├── Mapper2.hpp      # UxROM (Mapper 2) implementation
+│   ├── Mapper3.hpp      # CNROM (Mapper 3) implementation
+│   ├── Mapper4.hpp      # MMC3 (Mapper 4) implementation
 │   ├── NES.hpp          # High-level system container
 │   └── PPU.hpp          # Picture Processing Unit 2C02 implementation
 ├── src/                 # System implementations & main GUI loop
@@ -145,5 +155,4 @@ An automated GitHub Actions workflow is provided in `.github/workflows/build.yml
 
 ## Known Limitations
 
-- Currently supports Mapper 0 (NROM) games (such as Super Mario Bros., Donkey Kong, Pac-Man). Additional mappers (MMC1, MMC3) can be added by implementing the `Mapper` interface.
 - Audio synthesis provides basic Pulse/Triangle/Noise emulation; DMC channel is currently stubbed.

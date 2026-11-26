@@ -132,5 +132,10 @@ void Bus::clock() {
         if (m_cpu) m_cpu->triggerNMI();
     }
 
+    if (m_cartridge && m_cartridge->irqActive()) {
+        m_cartridge->irqClear();
+        if (m_cpu) m_cpu->irq();
+    }
+
     m_systemClockCounter++;
 }

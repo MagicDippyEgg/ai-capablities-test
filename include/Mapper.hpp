@@ -24,6 +24,9 @@ public:
     virtual bool ppuMapWrite(uint16_t addr, uint32_t &mapped_addr) = 0;
 
     virtual MirrorMode mirrorMode() const { return MirrorMode::HORIZONTAL; }
+    virtual bool irqActive() const { return false; }
+    virtual void irqClear() {}
+    virtual void scanline() {}
 
 protected:
     uint8_t m_prgBanks = 0;
